@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<p th:text="${path}">错误发生时请求的URL路径</p>
+<p th:text="${status}">Http状态码</p>
+<p th:text="${error}">错误原因</p>
+<p th:text="${exception}">异常的类名</p>
+<p th:text="${message}">异常信息</p>
+<p th:text="${errors}">BindingResult异常里的各种错误</p>
+<p th:text="${trace}">异常跟踪信息</p>
+</body>
+</html>

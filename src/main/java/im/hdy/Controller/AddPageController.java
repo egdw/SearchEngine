@@ -36,13 +36,13 @@ public class AddPageController {
                 jedis.set("title:" + title, text);
                 String[] words = StringUtils.getWord();
                 //移除一些标点符号,并变成小写
-                String temp = text.replaceAll("'", "").replaceAll(".", "").replaceAll(",", "").replaceAll(":", "").toLowerCase();
+                String temp = text.replace("\"", "").replace("(", "").replace(")", "").replace("'", "").replace(".", "").replace(",", "").replace(":", "").toLowerCase().replace("/", "");
+                System.out.println(temp);
                 String[] splits = temp.split(" ");
                 Pipeline pipeline = jedis.pipelined();
                 pipeline.multi();
                 //设置为事务
                 for (String split : splits) {
-                    System.out.println(split);
                     if (split.equals(" ")) {
                         continue;
                     }
@@ -53,6 +53,7 @@ public class AddPageController {
                     }
                     //当前的单词和标题进行绑定
                     System.out.println(split.trim());
+                    //用于将输入的英文字符进行相应的解析生成相应的索引
                     pipeline.sadd("idx:" + split.trim(), title);
                 }
                 //提交事务
@@ -64,7 +65,4 @@ public class AddPageController {
         return "success";
     }
 
-    //用于将输入的英文字符进行相应的解析生成相应的索引
-    public void dealText(String text) {
-    }
 }

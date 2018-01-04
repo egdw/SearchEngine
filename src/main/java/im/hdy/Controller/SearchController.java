@@ -56,6 +56,7 @@ public class SearchController {
                 Long sunionstore = jedis.sunionstore(name, spilt);
                 //数据最多只保存五分钟,为了节省内存
                 jedis.expire(name, 60 * 5);
+                smembers = jedis.smembers(name);
             }
             return smembers;
         } finally {

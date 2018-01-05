@@ -29,13 +29,23 @@ public class SearchController {
     /**
      * 用于主页搜索关键词
      */
-    @RequestMapping(method = RequestMethod.POST)
+    @RequestMapping()
     public String search(@RequestParam(required = true) String s, Model model) {
         //首先暂时先通过空格进行关键词的搜索
         long start = System.currentTimeMillis();
         String[] split = s.toLowerCase().trim().split(" ");
-        ArrayList<Page> pages = (ArrayList<Page>) searchFromRedis(split, s)[0];
-        ArrayList<String> recommend = (ArrayList<String>) searchFromRedis(split, s)[1];
+        Object[] objects = searchFromRedis(split, s);
+        ArrayList<Page> pages = (ArrayList<Page>) objects[0];
+        ArrayList<String> recommend = (ArrayList<String>) objects[1];
+        Long count = (Long) objects[2];
+        System.out.println(count);
+        model.addAttribute("index", 0);
+        if (count % 10 == 0) {
+            //说明是整除
+            model.addAttribute("count", count / 10);
+        } else {
+            model.addAttribute("count", (count / 10) + 1);
+        }
 //        System.out.println(pages);
         model.addAttribute("pages", pages);
         model.addAttribute("recommend", recommend);
@@ -43,6 +53,71 @@ public class SearchController {
         //About 695,000,000 results (0.48 seconds)
         model.addAttribute("result", "About " + pages.size() + " results (" + ((System.currentTimeMillis() - start) / 1000) + " seconds)");
         return "search";
+    }
+
+    /**
+     * 用于分页
+     *
+     * @return
+     */
+    @RequestMapping("/page")
+    public String changePage(@RequestParam(required = true) Long i, @RequestParam(required = true) String s, Model model) {
+        Jedis jedis = jedisPool.getResource();
+        try {
+            Boolean exists = jedis.exists("s:" + s);
+            //如果键值对存在
+            if (exists) {
+                Set<String> zrange = jedis.zrange("s:" + s, i * 10, (i * 10) + 10);
+                Iterator<String> stringIterator = zrange.iterator();
+                ArrayList<Page> pages = new ArrayList<Page>();
+                while (stringIterator.hasNext()) {
+                    String next = stringIterator.next();
+                    Page page = new Page(next, jedis.get("title:" + next).substring(0, 200) + "...");
+                    pages.add(page);
+                }
+                model.addAttribute("pages", pages);
+                String[] split = s.split(" ");
+                String[] spiltKey = new String[split.length];
+                for (int j = 0; j < split.length; j++) {
+                    String trim = split[j].trim();
+                    spiltKey[j] = "search:" + trim;
+                }
+                Set<String> keys = jedis.sinter(spiltKey);
+                System.out.println(keys);
+                Iterator<String> keyIterator = keys.iterator();
+                //用于存放获取到的推荐搜索内容
+                ArrayList<String> keyArrays = new ArrayList<String>();
+                //后续这里也进行分页代替
+                int temp = 0;
+                while (keyIterator.hasNext() && temp <= 8) {
+                    String next = keyIterator.next();
+                    keyArrays.add(next);
+//                System.out.println("aaaa");
+                    temp++;
+                }
+                model.addAttribute("recommend", keyArrays);
+            } else {
+                String[] split = s.split(" ");
+
+                Object[] objects = searchFromRedis(split, s);
+                ArrayList<Page> pages = (ArrayList<Page>) objects[0];
+                ArrayList<String> recommend = (ArrayList<String>) objects[1];
+                model.addAttribute("pages", pages);
+                model.addAttribute("recommend", recommend);
+            }
+            Long count = jedis.zcard("s:" + s);
+            if (count % 11 == 0) {
+                //说明是整除
+                model.addAttribute("count", count / 11);
+            } else {
+                model.addAttribute("count", (count / 11) + 1);
+            }
+            model.addAttribute("search_text", s);
+            model.addAttribute("index", ++i);
+            return "search";
+        } finally {
+            jedis.close();
+        }
     }
 
 
@@ -96,25 +171,52 @@ public class SearchController {
                 //判断是否有缓存
                 //如果没有
                 Long sunionstore = jedis.sinterstore(name, spilt);
-                //数据最多只保存五分钟,为了节省内存
-                jedis.expire(name, 60 * 5);
+                //数据最多只保存一分钟,为了节省内存
+                jedis.expire(name, 60);
                 smembers = jedis.smembers(name);
             }
             Iterator<String> iterator = smembers.iterator();
             //准备事务流
+            Pipeline pipelined = jedis.pipelined();
+            pipelined.multi();
             ArrayList<Page> pages = new ArrayList<Page>();
             while (iterator.hasNext()) {
                 String next = iterator.next();
-                String text = jedis.get("title:" + next).substring(30);
-                Page page = new Page(next, text.substring(0, 200) + "...");
+                //后期通过时间进行排序
+                pipelined.zadd("s:" + s, System.currentTimeMillis(), next);
+//                String text = jedis.get("title:" + next).substring(30);
+//                Page page = new Page(next, text.substring(0, 200) + "...");
+//                pages.add(page);
+            }
+            //内存有限,仅保存5分钟
+            pipelined.expire("s:" + s, 60 * 5);
+            pipelined.exec();
+            try {
+                pipelined.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            Set<String> zrange = jedis.zrange("s:" + s, 0, 10);
+            Iterator<String> stringIterator = zrange.iterator();
+            while (stringIterator.hasNext()) {
+                String next = stringIterator.next();
+                Page page = new Page(next, jedis.get("title:" + next).substring(0, 200) + "...");
                 pages.add(page);
             }
-            System.out.println(keyArrays);
-            Object[] objs = new Object[]{pages, keyArrays};
+            System.out.println(pages);
+            //设置过期时间
+            Object[] objs = new Object[]{pages, keyArrays, jedis.zcard("s:" + s)};
 
             return objs;
         } finally {
             jedis.close();
         }
+    }
+
+    /**
+     * 获取推荐内容
+     */
+    public void getRecommand() {
+
     }
 }

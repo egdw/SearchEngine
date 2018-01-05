@@ -93,7 +93,7 @@
             <!--</ul>-->
             <ul id="related-list1" th:each="rec:${recommend}">
                 <!--<h1>asdad</h1>-->
-                <li><a href="#" th:text="${rec}">add pin it button to website</a></li>
+                <li><a href="#" th:href="@{'search?s='+${rec}}" th:text="${rec}">add pin it button to website</a></li>
                 <!--<li><a href="#">pinterest hover button blogger</a></li>-->
                 <!--<li><a href="#">pinterest widget for blogger</a></li>-->
                 <!--<li><a href="#">pin site button does not allow you to</a></li>-->
@@ -112,16 +112,20 @@
             <tr valign="top">
                 <td id="Gcol"><span id="G"></span></td>
                 <td id="o1col"><span id="o1"></span>1</td>
-                <td class="o2col"><a href="#"><span class="o2"></span>2</a></td>
-                <td class="o2col"><a href="#"><span class="o2"></span>3</a></td>
-                <td class="o2col"><a href="#"><span class="o2"></span>4</a></td>
-                <td class="o2col"><a href="#"><span class="o2"></span>5</a></td>
-                <td class="o2col"><a href="#"><span class="o2"></span>6</a></td>
-                <td class="o2col"><a href="#"><span class="o2"></span>7</a></td>
-                <td class="o2col"><a href="#"><span class="o2"></span>8</a></td>
-                <td class="o2col"><a href="#"><span class="o2"></span>9</a></td>
-                <td class="o2col"><a href="#"><span class="o2"></span>10</a></td>
-                <td id="glecol"><a href="#"><span id="gle"></span>Next</a></td>
+                <td id="o2col" th:each="count,pageStat:${count}"><span class="o2"></span>
+                    <p th:text="${pageStat.index}+2">2</p></td>
+                <!--<td id="o1col"><span id="o1"></span>1</td>-->
+                <!--<td class="o2col"><a href="#"><span class="o2"></span>2</a></td>-->
+                <!--<td class="o2col"><a href="#"><span class="o2"></span>3</a></td>-->
+                <!--<td class="o2col"><a href="#"><span class="o2"></span>4</a></td>-->
+                <!--<td class="o2col"><a href="#"><span class="o2"></span>5</a></td>-->
+                <!--<td class="o2col"><a href="#"><span class="o2"></span>6</a></td>-->
+                <!--<td class="o2col"><a href="#"><span class="o2"></span>7</a></td>-->
+                <!--<td class="o2col"><a href="#"><span class="o2"></span>8</a></td>-->
+                <!--<td class="o2col"><a href="#"><span class="o2"></span>9</a></td>-->
+                <!--<td class="o2col"><a href="#"><span class="o2"></span>10</a></td>-->
+                <td id="glecol"><a href="#"><span id="gle"></span>Next</a>
+                </td>
             </tr>
             </tbody>
         </table>

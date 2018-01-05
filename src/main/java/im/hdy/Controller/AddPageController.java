@@ -23,7 +23,6 @@ public class AddPageController {
     @RequestMapping(method = RequestMethod.POST)
     @ResponseBody
     public String addPage(@RequestParam(required = true) String title, @RequestParam(required = true) String text) {
-        System.out.println("get");
         Jedis jedis =
                 jedisPool.getResource();
         //根据title获取文章内容.这里要求文章标题必须是唯一的

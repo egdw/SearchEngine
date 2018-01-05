@@ -34,12 +34,12 @@ public class SearchController {
         //首先暂时先通过空格进行关键词的搜索
         long start = System.currentTimeMillis();
         String[] split = s.toLowerCase().trim().split(" ");
-        Object[] objects = searchFromRedis(split, s);
+        Object[] objects = searchFromRedis(split, s, 0l);
         ArrayList<Page> pages = (ArrayList<Page>) objects[0];
         ArrayList<String> recommend = (ArrayList<String>) objects[1];
         Long count = (Long) objects[2];
         System.out.println(count);
-        model.addAttribute("index", 0);
+        model.addAttribute("index", 1);
         if (count % 10 == 0) {
             //说明是整除
             model.addAttribute("count", count / 10);
@@ -60,12 +60,14 @@ public class SearchController {
      *
      * @return
      */
-    @RequestMapping("/page")
+    @RequestMapping(value = "/page", method = RequestMethod.GET)
     public String changePage(@RequestParam(required = true) Long i, @RequestParam(required = true) String s, Model model) {
         Jedis jedis = jedisPool.getResource();
+        long start = System.currentTimeMillis();
         try {
             Boolean exists = jedis.exists("s:" + s);
             //如果键值对存在
+            long pages_count = 0l;
             if (exists) {
                 Set<String> zrange = jedis.zrange("s:" + s, i * 10, (i * 10) + 10);
                 Iterator<String> stringIterator = zrange.iterator();
@@ -76,6 +78,7 @@ public class SearchController {
                     pages.add(page);
                 }
                 model.addAttribute("pages", pages);
+                pages_count = pages.size();
                 String[] split = s.split(" ");
                 String[] spiltKey = new String[split.length];
                 for (int j = 0; j < split.length; j++) {
@@ -99,12 +102,15 @@ public class SearchController {
             } else {
                 String[] split = s.split(" ");
 
-                Object[] objects = searchFromRedis(split, s);
+                Object[] objects = searchFromRedis(split, s, i);
                 ArrayList<Page> pages = (ArrayList<Page>) objects[0];
                 ArrayList<String> recommend = (ArrayList<String>) objects[1];
                 model.addAttribute("pages", pages);
+                pages_count = pages.size();
                 model.addAttribute("recommend", recommend);
             }
+            model.addAttribute("result", "About " + pages_count + " results (" + ((System.currentTimeMillis() - start) / 1000) + " seconds)");
+
             Long count = jedis.zcard("s:" + s);
             if (count % 11 == 0) {
                 //说明是整除
@@ -126,7 +132,7 @@ public class SearchController {
      *
      * @param spilt 获取的搜索分词信息
      */
-    public Object[] searchFromRedis(String[] spilt, String s) {
+    public Object[] searchFromRedis(String[] spilt, String s, Long index) {
         if (spilt == null || spilt.length == 0) {
             return null;
         }
@@ -196,7 +202,7 @@ public class SearchController {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            Set<String> zrange = jedis.zrange("s:" + s, 0, 10);
+            Set<String> zrange = jedis.zrange("s:" + s, index * 10, index * 10 + 9);
             Iterator<String> stringIterator = zrange.iterator();
             while (stringIterator.hasNext()) {
                 String next = stringIterator.next();

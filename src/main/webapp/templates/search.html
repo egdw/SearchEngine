@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.w3.org/1999/xhtml" id="Main">
 <head>
     <title th:text="${search_text}">Google Search</title>
-    <link style="text/css" rel="stylesheet" href="./templates/styles/main.css"/>
+    <link style="text/css" rel="stylesheet" href="/templates/styles/main.css"/>
     <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
     <meta charset="UTF-8">
 </head>
@@ -11,7 +11,7 @@
     <div id="header">
         <div id="left-header">
             <div id="logo-container">
-                <img id="logo" src="./templates/images/google.png">
+                <img id="logo" src="/templates/images/google.png">
             </div>
             <div id="searchbar-container">
                 <input type="text" id="searchbar" th:value="${search_text}" value="build this page"/>
@@ -124,7 +124,7 @@
                 <!--<td class="o2col"><a href="#"><span class="o2"></span>8</a></td>-->
                 <!--<td class="o2col"><a href="#"><span class="o2"></span>9</a></td>-->
                 <!--<td class="o2col"><a href="#"><span class="o2"></span>10</a></td>-->
-                <td id="glecol"><a href="#"><span id="gle"></span>Next</a>
+                <td id="glecol"><a th:href="@{'search/page?s='+${search_text}+'&i='+${index}}"><span id="gle"></span>Next</a>
                 </td>
             </tr>
             </tbody>
@@ -168,7 +168,7 @@
     $("#searchbutton").click(function () {
         var s = $("#searchbar").val();
         console.log(s)
-        $.StandardPost('search', {'s': s});
+        $.StandardPost('/search', {'s': s});
     });
 </script>
 </html>
